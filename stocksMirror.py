@@ -6,6 +6,7 @@ import json
 coins=['BTC', 'ETH', 'LTC', 'DASH', 'OMG', 'NAV', 'IOT', 'SC', 'STEEM', 'XMR', 'BAT', 'NEO', 'ARK']
 currencies=['BTC', 'USD']
 apiUrl='https://min-api.cryptocompare.com/data/pricemultifull?'
+currentPrice=1#placeholder for when the app starts up so it
 
 #Call update every 30 minutes, update then queries the api endpoint for new data and then caluculate
 class Stocks(Frame):
@@ -18,12 +19,13 @@ class Stocks(Frame):
         print(rawData)
 
     def update(self, coin):
+        #update previous price and current price
         previousPrice=currentPrice
         currentPrice=coin['PRICE']
-        percentageInc=currentPrice-previousPrice/previousPrice
-        #get previous price
-        #current price - previous price/ previous price = %increase or decrease
-        #display current price
+
+        percentage=currentPrice-previousPrice/previousPrice
+        print('Current Price for ' + coin + ': ' + currentPrice)
+        print('Percentage: ' + percentage)
         pass
 
     def query(self):

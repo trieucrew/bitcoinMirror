@@ -1,32 +1,40 @@
-from Tkinter import *
+from kivy.app import App
+from kivy.uix.widget import Widget
 import threading
 import requests
 import json
+import time
 
 coins=['BTC', 'ETH', 'LTC', 'DASH', 'OMG', 'NAV', 'IOT', 'SC', 'STEEM', 'XMR', 'BAT', 'NEO', 'ARK']
+prevPrices=[]
 currencies=['BTC', 'USD']
 apiUrl='https://min-api.cryptocompare.com/data/pricemultifull?'
-currentPrice=1#placeholder for when the app starts up so it
-
+#placeholder for when the app starts up so it
 #Call update every 30 minutes, update then queries the api endpoint for new data and then caluculate
-class Stocks(Frame):
+class Stocks():
     def __init__(self):
-        #Frame.__init__(self, parent, bg='black')
-        rawData = self.query()
         for coin in coins:
-            self.update(rawData[coin])
-            break
-        print(rawData)
+            prevPrices.append(1)
+        for i in range(0,3):
+            rawData = self.query()
 
-    def update(self, coin):
+            print("------------" + str(i))
+            for index, coin in enumerate(coins):
+                self.update(rawData[coin], 'USD', index,)
+            print(prevPrices)
+            #time.sleep(60)
+
+    def update(self, coin, curr, index):
+        global prevPrices
+        coin=coin[curr]
         #update previous price and current price
-        previousPrice=currentPrice
-        currentPrice=coin['PRICE']
+        self.previousPrice=prevPrices[index]
+        prevPrices[index]=self.currentPrice=coin['PRICE']
 
-        percentage=currentPrice-previousPrice/previousPrice
-        print('Current Price for ' + coin + ': ' + currentPrice)
-        print('Percentage: ' + percentage)
-        pass
+        self.percentage=(self.currentPrice-self.previousPrice)/self.previousPrice
+        print('Current Price for ' + coin['FROMSYMBOL'] + ': ' + str(self.currentPrice))
+        print('Percentage: ' + str(self.percentage))
+
 
     def query(self):
         url=self.concatenateReqURL(apiUrl)
@@ -53,27 +61,14 @@ class Stocks(Frame):
             url=url+currency+','
         return url
 
-class FullScreenWindow:
-    def __init__(self):
-        self.tk = Tk()
-        self.tk.configure(background='black')
-        self.topFrame = Frame(self.tk, background='black')
-        self.bottomFrame = Frame(self.tk, background='black')
-        self.topFrame.pack(side=TOP, fill=BOTH, expand=YES)
-        self.bottomFrame.pack(side=BOTTOM, fill=BOTH, expand=YES)
-        self.state = False
-        self.tk.bind("<Return>", self.toggle_fullscreen)
-        self.tk.bind("<Escape>", self.mimimize)
+class CoinDisplay(Widget):
+    stocks = Stocks()
+    pass
 
-    def toggle_fullscreen(self, event=None):
-        self.state = not self.state
-        self.tk.attributes("-fullscreen", self.state)
-        return "break"
-
-    def mimimize(self, event=None):
-        self.state = False
-        self.tk.attributes("-fullscreen", False)
-        return "break"
+class MirrorApp(App):
+    def build(self):
+        return CoinDisplay()
 
 if __name__ == '__main__':
-    stock = Stocks()
+    MirrorApp().run()
+    #stock = Stocks()

@@ -1,6 +1,12 @@
+import kivy
+kivy.require('1.10.0')
 from kivy.app import App
 from kivy.uix.widget import Widget
-import threading
+from functools import partial
+from kivy.factory import Factory
+from kivy.clock import Clock
+from kivy.uix.carousel import Carousel
+
 import requests
 import json
 import time
@@ -13,27 +19,29 @@ apiUrl='https://min-api.cryptocompare.com/data/pricemultifull?'
 #Call update every 30 minutes, update then queries the api endpoint for new data and then caluculate
 class Stocks():
     def __init__(self):
-        for coin in coins:
-            prevPrices.append(1)
-        for i in range(0,3):
-            rawData = self.query()
-
-            print("------------" + str(i))
-            for index, coin in enumerate(coins):
-                self.update(rawData[coin], 'USD', index,)
-            print(prevPrices)
-            #time.sleep(60)
-
-    def update(self, coin, curr, index):
         global prevPrices
-        coin=coin[curr]
-        #update previous price and current price
-        self.previousPrice=prevPrices[index]
-        prevPrices[index]=self.currentPrice=coin['PRICE']
+        self.rawData=self.query()
+        for coin in coins:
+            coinName=self.rawData[coin]['USD']
+            prevPrices.append(coinName['PRICE'])
+        print(prevPrices)
 
-        self.percentage=(self.currentPrice-self.previousPrice)/self.previousPrice
-        print('Current Price for ' + coin['FROMSYMBOL'] + ': ' + str(self.currentPrice))
-        print('Percentage: ' + str(self.percentage))
+    def update(self):
+        global prevPrices
+        self.rawData = self.query()
+        pricesAndPercentages=[]
+
+        for index, coin in enumerate(coins):
+            coinName=self.rawData[coin]['USD']
+
+            #update previous price and current price
+            self.previousPrice=prevPrices[index]
+            prevPrices[index]=self.currentPrice=coinName['PRICE']
+
+            self.percentage=(self.currentPrice-self.previousPrice)/self.previousPrice
+            pricesAndPercentages.append({'name': str(coinName['FROMSYMBOL']), 'price': self.currentPrice, 'percentage': self.percentage})
+
+        return pricesAndPercentages
 
 
     def query(self):
@@ -61,13 +69,28 @@ class Stocks():
             url=url+currency+','
         return url
 
-class CoinDisplay(Widget):
-    stocks = Stocks()
-    pass
+class CarouselDisplay(Widget):
+
+    def update(self):
+        App.get_running_app().data=App.get_running_app().stocks.update()
+        print(App.get_running_app().data)
+
+    Clock.schedule_interval(partial(update), 5)
 
 class MirrorApp(App):
+    stocks=Stocks()
+    data=[]
+
     def build(self):
-        return CoinDisplay()
+        carouselDisplay=CarouselDisplay()
+        carousel = Carousel(direction='right', loop=True)
+        for i in range(0, 10):
+            text = Factory.Label(text=str(i))
+            carousel.add_widget(text)
+
+        Clock.schedule_interval(carousel.load_next, 1)
+        carouselDisplay.add_widget(carousel)
+        return carouselDisplay
 
 if __name__ == '__main__':
     MirrorApp().run()
